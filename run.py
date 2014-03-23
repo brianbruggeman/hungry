@@ -20,7 +20,6 @@ import math
 import os
 import random
 import sys
-import time
 
 import pygame as pg
 # from pygame.locals import *
@@ -30,18 +29,18 @@ import pygame as pg
 # Utility Structures
 # ----------------------------------------------------------------------
 keyboard_controls = {
-    'north': [],
-    'south': [],
-    'east': [],
-    'west': [],
+    'move_north': [pg.K_UP, pg.K_w],
+    'move_south': [pg.K_DOWN, pg.K_s],
+    'move_east': [pg.K_RIGHT, pg.K_d],
+    'move_west': [pg.K_LEFT, pg.K_a],
     'inventory': [pg.K_i, pg.K_b],
     'attack': [pg.K_r],
-    'strafe_left': [pg.K_RIGHT, pg.K_d],
-    'strafe_right': [pg.K_LEFT, pg.K_a],
+    'strafe_left': [],
+    'strafe_right': [],
     'rotate_left': [pg.K_q],
     'rotate_right': [pg.K_e],
-    'move_forward': [pg.K_UP, pg.K_w],
-    'move_backward': [pg.K_DOWN, pg.K_s],
+    'move_forward': [],
+    'move_backward': [],
 }
 
 keyboard_events = [
@@ -64,6 +63,11 @@ keyboard_mods = dict(
 )
 
 game_path = os.path.dirname(os.path.abspath(__file__))
+
+KEY_PRESSED = 2
+KEY_RELEASED = 3
+Y_AXIS = 1
+X_AXIS = 0
 
 
 # ----------------------------------------------------------------------
@@ -141,9 +145,13 @@ class SpriteSheet(object):
                 return img, rect
         return [None, None]
 
+
 # ----------------------------------------------------------------------
 # Object Classes
 # ----------------------------------------------------------------------
+class PlayerDied(Exception):
+    pass
+
 class Player(pg.sprite.Sprite):
 
     """
@@ -175,37 +183,48 @@ class Player(pg.sprite.Sprite):
         if not hasattr(self, attr):
             setattr(self, attr, self.default_health)
         return getattr(self, attr)
-    
+
     @health.setter
     def health(self, value=0):
         attr = '__health__'
         setattr(self, attr, value)
-        self.logger.debug('Player health = %s' % self.health)
         if self.health <= 0:
-            self.logger.debug('Player died')
-            pg.quit()
+            setattr(self, attr, 0)
+            self.logger.debug('Player is dead')
+            raise PlayerDied()
+            self.setup()
+        else:
+            self.logger.debug('Player health = %s' % self.health)
 
-
-    def __init__(self, x=0, y=0, logger=None):
+    def __init__(self, bullets, logger=None):
         # super(Player, self).__init__()
         pg.sprite.Sprite.__init__(self)
         self.logger = logger if logger is not None else LoggerFacade()
         self.sheet = SpriteSheet('player')
         self.image, self.rect = self.sheet[(0, 2)]
         self.area = pg.display.get_surface().get_rect()
+        self.setup()
+
+    def setup(self):
+        if not hasattr(self, 'zombies'):
+            self.zombies = []
+        else:
+            [self.zombies.pop() for z in self.zombies]
+            self.zombies.append(Zombie(self, self.logger))
+        self.image.get_rect().x = self.area.w/2.0
+        self.image.get_rect().y = self.area.h/2.0
+        self.state = "standing"
+        self.movepos = [0, 0]
         self.speed = 10
         self.orientation = "south"
         self.state = "standing"
         self.health = 3
-        self.setup()
-
-    def setup(self):
-        self.state = "standing"
-        self.movepos = [0, 0]
+        self.score = 0
         # self.rect.center = self.movepos
 
     def update(self):
         moving = False
+        self.score += 0.1 * len(self.zombies)
         newpos = self.rect.move(self.movepos)
         if self.area.contains(newpos):
             moving = True
@@ -235,64 +254,72 @@ class Player(pg.sprite.Sprite):
         pg.event.pump()
 
     def move_north(self, event):
-        self.movepos[1] -= self.speed
-        self.orientation = "north"
+        if event.type == KEY_PRESSED:
+            self.movepos[Y_AXIS] -= self.speed
+        elif event.type == KEY_RELEASED:
+            self.movepos[Y_AXIS] = 0
 
     def move_south(self, event):
-        self.movepos[1] += self.speed
-        self.orientation = "south"
+        if event.type == KEY_PRESSED:
+            self.movepos[Y_AXIS] += self.speed
+        elif event.type == KEY_RELEASED:
+            self.movepos[Y_AXIS] = 0
 
     def move_east(self, event):
-        self.movepos[0] += self.speed
-        self.orientation = "east"
+        if event.type == KEY_PRESSED:
+            self.movepos[X_AXIS] += self.speed
+        elif event.type == KEY_RELEASED:
+            self.movepos[X_AXIS] = 0
 
     def move_west(self, event):
-        self.movepos[0] -= self.speed
-        self.orientation = "west"
+        if event.type == KEY_PRESSED:
+            self.movepos[X_AXIS] -= self.speed
+        elif event.type == KEY_RELEASED:
+            self.movepos[X_AXIS] = 0
 
     def move_forward(self, event):
         if self.orientation == "north":
-            if event.type == 2:
-                self.movepos[1] -= self.speed
-            elif event.type == 3:
-                self.movepos[1] = 0
+            if event.type == KEY_PRESSED:
+                self.movepos[Y_AXIS] -= self.speed
+            elif event.type == KEY_RELEASED:
+                self.movepos[Y_AXIS] = 0
         elif self.orientation == "south":
-            if event.type == 2:
-                self.movepos[1] += self.speed
-            elif event.type == 3:
-                self.movepos[1] = 0
+            if event.type == KEY_PRESSED:
+                self.movepos[Y_AXIS] += self.speed
+            elif event.type == KEY_RELEASED:
+                self.movepos[Y_AXIS] = 0
         elif self.orientation == "east":
-            if event.type == 2:
-                self.movepos[0] += self.speed
-            elif event.type == 3:
-                self.movepos[0] = 0
+            if event.type == KEY_PRESSED:
+                self.movepos[X_AXIS] += self.speed
+            elif event.type == KEY_RELEASED:
+                self.movepos[X_AXIS] = 0
         elif self.orientation == "west":
-            if event.type == 2:
-                self.movepos[0] -= self.speed
-            elif event.type == 3:
-                self.movepos[0] = 0
+            if event.type == KEY_PRESSED:
+                self.movepos[X_AXIS] -= self.speed
+            elif event.type == KEY_RELEASED:
+                self.movepos[X_AXIS] = 0
 
     def move_backward(self, event):
         if self.orientation == "north":
-            if event.type == 2:
-                self.movepos[1] += self.speed
-            elif event.type == 3:
-                self.movepos[1] = 0
+            if event.type == KEY_PRESSED:
+                self.movepos[Y_AXIS] += self.speed
+            elif event.type == KEY_RELEASED:
+                self.movepos[Y_AXIS] = 0
         elif self.orientation == "south":
-            if event.type == 2:
-                self.movepos[1] -= self.speed
-            elif event.type == 3:
-                self.movepos[1] = 0
+            if event.type == KEY_PRESSED:
+                self.movepos[Y_AXIS] -= self.speed
+            elif event.type == KEY_RELEASED:
+                self.movepos[Y_AXIS] = 0
         elif self.orientation == "east":
-            if event.type == 2:
-                self.movepos[0] -= self.speed
-            elif event.type == 3:
-                self.movepos[0] = 0
+            if event.type == KEY_PRESSED:
+                self.movepos[X_AXIS] -= self.speed
+            elif event.type == KEY_RELEASED:
+                self.movepos[X_AXIS] = 0
         elif self.orientation == "west":
-            if event.type == 2:
-                self.movepos[0] += self.speed
-            elif event.type == 3:
-                self.movepos[0] = 0
+            if event.type == KEY_PRESSED:
+                self.movepos[X_AXIS] += self.speed
+            elif event.type == KEY_RELEASED:
+                self.movepos[X_AXIS] = 0
 
     def rotate_right(self, event):
         move_event = 2
@@ -336,38 +363,25 @@ class Player(pg.sprite.Sprite):
         # self.logger.debug("((%s) movepos[%s] += %s" % (event.type, pos_index, speed))
         self.movepos[pos_index] = speed
 
+    def attack(self, event):
+        b = Bullet()
+
+    def is_alive(self):
+        return self.health > 0
+
     def handle_event(self, event):
         if event.type in keyboard_events:
-            if event.key in keyboard_controls.get('strafe_left'):
-                self.strafe_left(event)
-            elif event.key in keyboard_controls.get('strafe_right'):
-                self.strafe_right(event)
-            if event.key in keyboard_controls.get('rotate_left'):
-                self.rotate_left(event)
-            elif event.key in keyboard_controls.get('rotate_right'):
-                self.rotate_right(event)
-            if event.key in keyboard_controls.get('move_forward'):
-                self.move_forward(event)
-            elif event.key in keyboard_controls.get('move_backward'):
-                self.move_backward(event)
-            if 0:
-                etype = "pressed" if event.type == 2 else "released"
-                key = pg.key.name(event.key)
-                mods = [
-                    keyboard_mods.get(m, '')
-                    for m in sorted(keyboard_mods)
-                    if m & event.mod
-                    ]
-                if key:
-                    mods.append(key)
-                key = "+".join(m for m in mods)
-                self.logger.debug('<Event %s "%s">' % (etype, key))
-
+            for func, keys in keyboard_controls.items():
+                if event.key in keys:
+                    if hasattr(self, func):
+                        func = getattr(self, func)
+                        func(event)
 
 class Bullet(object):
 
     def __init__(self, point, vector, logger=None):
         pass
+
 
 class Zombie(pg.sprite.Sprite):
 
@@ -385,8 +399,6 @@ class Zombie(pg.sprite.Sprite):
         self.spawn()
 
     def spawn(self):
-        rect_x = self.rect[2]
-        rect_y = self.rect[3]
         wx = self.area[2]
         wy = self.area[3]
         x, y = 0, 0
@@ -416,27 +428,28 @@ class Zombie(pg.sprite.Sprite):
         return dx, dy
 
     def update(self):
-        moving = False
         dx, dy = self.find_player()
         if pg.sprite.collide_rect(self, self.player):
             self.attack_player()
-        dx = round(dx) if dx != 0 else 0
-        dy = round(dy) if dy != 0 else 0
-        self.movepos = (dx * self.speed, dy * self.speed)
-        newpos = self.rect.move(self.movepos)
-        if self.area.contains(newpos):
-            self.rect = newpos
-        else:
-            if self.area.x < newpos.x:
-                newpos.x -= self.area.x
-            if self.area.y < newpos.y:
-                newpos.y -= self.area.y
+        if self.player.is_alive():
+            dx = round(dx) if dx != 0 else 0
+            dy = round(dy) if dy != 0 else 0
+            self.movepos = (dx * self.speed, dy * self.speed)
+            newpos = self.rect.move(self.movepos)
             if self.area.contains(newpos):
                 self.rect = newpos
-        pg.event.pump()
+            else:
+                if self.area.x < newpos.x:
+                    newpos.x -= self.area.x
+                if self.area.y < newpos.y:
+                    newpos.y -= self.area.y
+                if self.area.contains(newpos):
+                    self.rect = newpos
+            pg.event.pump()
 
     def attack_player(self):
         self.player.health -= self.attack
+
 
 def main(args):
     # Setup the logging
@@ -450,6 +463,10 @@ def main(args):
 
     # Create a window
     pg.init()
+    pg.font.init()
+    myfont = pg.font.SysFont("impact", 15)
+    bigfont = pg.font.SysFont("impact", 45)
+
     window = pg.display.set_mode((800, 600))
     pg.display.set_caption('Basic Walkabout')
 
@@ -457,47 +474,64 @@ def main(args):
     background = pg.Surface(window.get_size())
     background = background.convert()
     background.fill((0, 0, 0))
-    width, height = window.get_size()
-    w, h = int(width / 2.0), int(height / 2.0)
-    player = Player(w, h, logger)
+    bullets = []
+    player = Player(bullets, logger)
     zombies = [Zombie(player, window)]
+    player.zombies = zombies
     # player_sprites = pg.sprite.RenderPlain(player)
     clock = pg.time.Clock()
     frames_per_second = 60
     frames = 0
-    spawn_rate = 300
+    spawn_rate = 160
     window.blit(background, (0, 0))
     old_rect = player.rect
 
     running = True
     while running:
         clock.tick(frames_per_second)
-        frames += 1
-        if frames > spawn_rate:
-            frames = 0
-            if spawn_rate > 21:
-                spawn_rate -= 20
-            zombies.append(Zombie(player, window))
+        try:
+            frames += 1
+            if frames > spawn_rate:
+                frames = 0
+                if spawn_rate > 21:
+                    spawn_rate -= 20
+                zombies.append(Zombie(player, window))
 
-        # Handle Events
-        for event in pg.event.get():
-            player.handle_event(event)
-            if event.type in keyboard_events:
-                if event.key == pg.K_ESCAPE:
-                    logging.debug('ESCAPE pressed.  Quitting')
-                    pg.quit()
+            # Handle Events
+            for event in pg.event.get():
+                player.handle_event(event)
+                if event.type in keyboard_events:
+                    if event.key == pg.K_ESCAPE:
+                        logging.debug('ESCAPE pressed.  Quitting')
+                        pg.quit()
+                        running = False
+                if hasattr(event, 'type') and event.type == pg.QUIT:
                     running = False
-            if hasattr(event, 'type') and event.type == pg.QUIT:
-                running = False
 
-        # Update display
-        window.blit(background, (0, 0))
-        player.update()
-        [z.update() for z in zombies]
-        [window.blit(z.image, z.rect) for z in zombies]
-        window.blit(player.image, player.rect)
+            # Update display
+            score = int(round(player.score))
+            label = myfont.render("Score: %s" % score, 1, (255,255,127))
+            zcount = len(zombies)
+            zlabel = myfont.render("Zombies: %s" % zcount, 1, (255,255,127))
+            window.blit(background, (0, 0))
+            player.update()
+            [z.update() for z in zombies]            
+            [window.blit(z.image, z.rect) for z in zombies]
+            window.blit(player.image, player.rect)
+            window.blit(label, (window.get_rect().w - label.get_rect().w - 10, 10))
+            window.blit(zlabel, (10, 10))
+        except PlayerDied:
+            score = int(round(player.score))
+            label = myfont.render("Score: %s" % score, 1, (255,255,127))
+            zcount = len(zombies)
+            zlabel = myfont.render("Zombies: %s" % zcount, 1, (255,255,127))
+            window.blit(label, (window.get_rect().w - label.get_rect().w - 10, 10))
+            window.blit(zlabel, (10, 10))
+            game_over = bigfont.render("GAME OVER", 1, (255, 255, 127))
+            wrect = window.get_rect()
+            grect = game_over.get_rect()
+            window.blit(game_over, (wrect.w/2.0 - grect.w/2.0, wrect.h/2.0 - grect.h/2.0))
         pg.display.update()
-
     logger.debug('Done.')
 
 if __name__ == "__main__":
