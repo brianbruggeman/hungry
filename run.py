@@ -467,12 +467,13 @@ def main(args):
     bigfont = pg.font.SysFont("impact", 45)
 
     window = pg.display.set_mode((800, 600))
-    pg.display.set_caption('Basic Walkabout')
-
     # Add Background
     background = pg.Surface(window.get_size())
     background = background.convert()
     background.fill((0, 0, 0))
+    window.blit(background, (0, 0))
+    pg.display.set_caption('Flee')
+
     # player_sprites = pg.sprite.RenderPlain(player)
     clock = pg.time.Clock()
     frames_per_second = 60
@@ -480,7 +481,6 @@ def main(args):
 
     running = True
     player_has_died = None
-    window.blit(background, (0, 0))
     while running:
         clock.tick(frames_per_second)
         if player_has_died is not False:
