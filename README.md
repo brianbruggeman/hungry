@@ -13,12 +13,12 @@ proper documentation in time.
 
 Basic controls:
 ---------------
-Left:  'a' or 'left arrow'
-Right:  'd' or 'right arrow'
-Up:  'w' or 'up arrow'
-Down: 's' or 'down arrow'
-Turn Left:  'q'
-Turn Right:  'e'
+* Left:  'a' or 'left arrow'
+* Right:  'd' or 'right arrow'
+* Up:  'w' or 'up arrow'
+* Down: 's' or 'down arrow'
+* Turn Left:  'q'
+* Turn Right:  'e'
 
 Future ideas:
 -------------
