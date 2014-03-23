@@ -3,6 +3,9 @@ hungry
 
 bacongamejam07
 
+![alt tag](https://github.com/brianbruggeman/hungry/blob/develop/screen_shot.png)
+
+
 Notes:
 ------
 First game I've ever built.  I wrote it in Python using pygame.
