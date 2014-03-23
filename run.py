@@ -486,6 +486,7 @@ def main(args):
         if player_has_died is not False:
             # restart
             if player_has_died is True:
+                # Keep game over and score up until a button is pressed
                 etype = None
                 while etype not in keyboard_events:
                     event = pg.event.wait()
