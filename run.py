@@ -450,7 +450,6 @@ class Zombie(pg.sprite.Sprite):
     def attack_player(self):
         self.player.health -= self.attack
 
-
 def main(args):
     # Setup the logging
     dbg = args.get('debug')
@@ -474,21 +473,30 @@ def main(args):
     background = pg.Surface(window.get_size())
     background = background.convert()
     background.fill((0, 0, 0))
-    bullets = []
-    player = Player(bullets, logger)
-    zombies = [Zombie(player, window)]
-    player.zombies = zombies
     # player_sprites = pg.sprite.RenderPlain(player)
     clock = pg.time.Clock()
     frames_per_second = 60
     frames = 0
-    spawn_rate = 160
-    window.blit(background, (0, 0))
-    old_rect = player.rect
 
     running = True
+    player_has_died = None
+    window.blit(background, (0, 0))
     while running:
         clock.tick(frames_per_second)
+        if player_has_died is not False:
+            # restart
+            if player_has_died is True:
+                etype = None
+                while etype not in keyboard_events:
+                    event = pg.event.wait()
+                    etype = event.type
+            player_has_died = False
+            spawn_rate = 160
+            bullets = []
+            player = Player(bullets, logger)
+            zombies = [Zombie(player, window)]
+            player.zombies = zombies
+            spawn_rate = 160
         try:
             frames += 1
             if frames > spawn_rate:
@@ -521,6 +529,7 @@ def main(args):
             window.blit(label, (window.get_rect().w - label.get_rect().w - 10, 10))
             window.blit(zlabel, (10, 10))
         except PlayerDied:
+            player_has_died = True
             score = int(round(player.score))
             label = myfont.render("Score: %s" % score, 1, (255,255,127))
             zcount = len(zombies)
