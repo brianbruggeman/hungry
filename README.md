@@ -3,7 +3,7 @@ hungry
 
 bacongamejam07
 
-![alt tag](https://github.com/brianbruggeman/hungry/blob/develop/screen_shot.png)
+![alt tag](https://raw.github.com/brianbruggeman/hungry/develop/screen_shot.png)
 
 
 Notes:
