@@ -9,7 +9,7 @@ First game I've ever built.  I wrote it in Python using pygame.
 
 I used Pixen to develop the graphics.  I had intended to animate the
 character, and the png file has animations.  However, I didn't find the
-proper documentation in time.
+proper pygame documentation in time.
 
 Basic controls:
 ---------------
