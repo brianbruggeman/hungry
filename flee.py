@@ -463,8 +463,8 @@ def main(args):
     # Create a window
     pg.init()
     pg.font.init()
-    myfont = pg.font.SysFont("impact", 15)
-    bigfont = pg.font.SysFont("impact", 45)
+    myfont = pg.font.Font("resources/tahoma", 15)
+    bigfont = pg.font.Font("resources/tahoma", 45)
 
     window = pg.display.set_mode((800, 600))
     # Add Background
