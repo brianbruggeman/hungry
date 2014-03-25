@@ -1,7 +1,11 @@
-hungry
+Flee
 ======
+Avoid the zombies!
 
-bacongamejam07
+bacongamejam07:  hungry
+
+![alt tag](https://raw.github.com/brianbruggeman/hungry/develop/screen_shot.png)
+
 
 Notes:
 ------
