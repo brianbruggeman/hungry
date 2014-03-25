@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Diamon Divas
+Flee
 
 Usage:
     diamond_divas
@@ -15,14 +15,13 @@ Options:
 """
 VERSION = "0.1-dev"
 
+import random
 import logging
 import math
 import os
-import random
 import sys
 
 import pygame as pg
-# from pygame.locals import *
 
 
 # ----------------------------------------------------------------------
@@ -190,11 +189,11 @@ class Player(pg.sprite.Sprite):
         setattr(self, attr, value)
         if self.health <= 0:
             setattr(self, attr, 0)
-            self.logger.debug('Player is dead')
+            logging.debug('Player is dead')
             raise PlayerDied()
             self.setup()
         else:
-            self.logger.debug('Player health = %s' % self.health)
+            logging.debug('Player health = %s' % self.health)
 
     def __init__(self, bullets, logger=None):
         # super(Player, self).__init__()
@@ -210,7 +209,7 @@ class Player(pg.sprite.Sprite):
             self.zombies = []
         else:
             [self.zombies.pop() for z in self.zombies]
-            self.zombies.append(Zombie(self, self.logger))
+            self.zombies.append(Zombie(self, logging))
         self.image.get_rect().x = self.area.w/2.0
         self.image.get_rect().y = self.area.h/2.0
         self.state = "standing"
@@ -351,7 +350,7 @@ class Player(pg.sprite.Sprite):
         speed = self.speed if event.type == move_event else 0
         speed = -speed if facing in ['south', 'west'] else speed
         pos_index = 0 if facing in ['north', 'south'] else 1
-        # self.logger.debug("((%s) movepos[%s] += %s" % (event.type, pos_index, speed))
+        # logging.debug("((%s) movepos[%s] += %s" % (event.type, pos_index, speed))
         self.movepos[pos_index] = speed
 
     def strafe_right(self, event):
@@ -360,7 +359,7 @@ class Player(pg.sprite.Sprite):
         speed = self.speed if event.type == move_event else 0
         speed = -speed if facing in ['north', 'east'] else speed
         pos_index = 0 if facing in ['north', 'south'] else 1
-        # self.logger.debug("((%s) movepos[%s] += %s" % (event.type, pos_index, speed))
+        # logging.debug("((%s) movepos[%s] += %s" % (event.type, pos_index, speed))
         self.movepos[pos_index] = speed
 
     def attack(self, event):
@@ -388,7 +387,7 @@ class Zombie(pg.sprite.Sprite):
     def __init__(self, player, logger=None):
         # super(Player, self).__init__()
         pg.sprite.Sprite.__init__(self)
-        self.logger = logger if logger is not None else LoggerFacade()
+        logging = logger if logger is not None else LoggerFacade()
         self.sheet = SpriteSheet('zombie')
         self.image, self.rect = self.sheet[(0, 0)]
         self.area = pg.display.get_surface().get_rect()
@@ -463,8 +462,8 @@ def main(args):
     # Create a window
     pg.init()
     pg.font.init()
-    myfont = pg.font.Font("resources/tahoma", 15)
-    bigfont = pg.font.Font("resources/tahoma", 45)
+    myfont = pg.font.Font("resources/Tahoma.ttf", 15)
+    bigfont = pg.font.Font("resources/Tahoma.ttf", 45)
 
     window = pg.display.set_mode((800, 600))
     # Add Background
@@ -512,7 +511,6 @@ def main(args):
                 if event.type in keyboard_events:
                     if event.key == pg.K_ESCAPE:
                         logging.debug('ESCAPE pressed.  Quitting')
-                        pg.quit()
                         running = False
                 if hasattr(event, 'type') and event.type == pg.QUIT:
                     running = False
@@ -542,6 +540,7 @@ def main(args):
             grect = game_over.get_rect()
             window.blit(game_over, (wrect.w/2.0 - grect.w/2.0, wrect.h/2.0 - grect.h/2.0))
         pg.display.update()
+    pg.quit()
     logger.debug('Done.')
 
 if __name__ == "__main__":
