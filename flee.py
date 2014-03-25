@@ -546,7 +546,11 @@ def main(args):
     logger.debug('Done.')
 
 if __name__ == "__main__":
-    from docopt import docopt
+    try:
+        from docopt import docopt
 
-    args = docopt(__doc__, version=VERSION)
-    main(args)
+        args = docopt(__doc__, version=VERSION)
+        main(args)
+    except:
+        args = {'debug': False}
+        main(args)
