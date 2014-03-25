@@ -462,8 +462,10 @@ def main(args):
     # Create a window
     pg.init()
     pg.font.init()
-    myfont = pg.font.Font("resources/Tahoma.ttf", 15)
-    bigfont = pg.font.Font("resources/Tahoma.ttf", 45)
+    font_path = "resources/Tahoma.ttf"
+    font_path = font_path if os.path.exists(font_path) else None
+    myfont = pg.font.Font(font_path, 15)
+    bigfont = pg.font.Font(font_path, 45)
 
     window = pg.display.set_mode((800, 600))
     # Add Background
